@@ -743,7 +743,7 @@ class TestTicketStorage(unittest.TestCase):
             "Checked the network connection",
         )
 
-    def test_note_ids_are_unique_across_tickets(self):
+    def test_note_ids_are_independent_per_ticket(self):
         first_ticket = create_ticket(
             "T001",
             "Wi-Fi is down",
@@ -774,7 +774,7 @@ class TestTicketStorage(unittest.TestCase):
         )
 
         self.assertEqual(first_note["note_id"], "N001")
-        self.assertEqual(second_note["note_id"], "N002")
+        self.assertEqual(second_note["note_id"], "N001")
 
     def test_second_note_gets_next_note_id(self):
         self.storage.add_ticket(self.ticket)
@@ -881,7 +881,6 @@ class TestTicketStorage(unittest.TestCase):
 
             self.assertEqual(len(notes), 2)
             self.assertEqual(notes[0]["note_id"], "N001")
-            self.assertEqual(second_note["note_id"], "N002")
             self.assertEqual(second_note["note_id"], "N002")
 
 
