@@ -105,6 +105,8 @@ class TicketStorage:
             if not isinstance(notes, list):
                 raise ValueError("Ticket notes must be a list")
 
+            # Note IDs must be unique within each ticket,
+            # but may repeat across different tickets.
             seen_note_ids = set()
 
             for note in notes:
@@ -112,7 +114,7 @@ class TicketStorage:
                     not isinstance(note, dict)
                     or set(note) != {"note_id", "author", "message"}
                 ):
-                    raise ValueError("Invalid ticket note in JSON storage")
+                    raise ValueError("Invalid note data in JSON storage")
 
                 note_id = note["note_id"]
                 author = note["author"]
@@ -121,13 +123,21 @@ class TicketStorage:
                 if (
                     not isinstance(note_id, str)
                     or not re.fullmatch(r"N\d{3,}", note_id)
-                    or note_id in seen_note_ids
-                    or not isinstance(author, str)
+                ):
+                    raise ValueError("Invalid note data in JSON storage")
+
+                if note_id in seen_note_ids:
+                    raise ValueError(
+                        f"Duplicate note ID in JSON storage: {note_id}"
+                    )
+
+                if (
+                    not isinstance(author, str)
                     or not author.strip()
                     or not isinstance(message, str)
                     or not 5 <= len(message.strip()) <= 300
                 ):
-                    raise ValueError("Invalid ticket note in JSON storage")
+                    raise ValueError("Invalid note data in JSON storage")
 
                 seen_note_ids.add(note_id)
 
@@ -280,8 +290,8 @@ class TicketStorage:
 
         notes = ticket.setdefault("notes", [])
         existing_numbers = []
-        seen_note_ids = set()
 
+        # Generate note IDs using only this ticket's existing notes.
         for existing_note in notes:
             if (
                 not isinstance(existing_note, dict)
@@ -296,7 +306,6 @@ class TicketStorage:
             if (
                 not isinstance(note_id, str)
                 or not re.fullmatch(r"N\d{3,}", note_id)
-                or note_id in seen_note_ids
                 or not isinstance(note_author, str)
                 or not note_author.strip()
                 or not isinstance(note_message, str)
@@ -304,7 +313,6 @@ class TicketStorage:
             ):
                 raise ValueError("Invalid existing ticket note")
 
-            seen_note_ids.add(note_id)
             existing_numbers.append(int(note_id[1:]))
 
         next_number = max(existing_numbers, default=0) + 1
